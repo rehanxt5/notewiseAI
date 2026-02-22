@@ -206,9 +206,9 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-.vscode
-notes
-testing
-designs
-files
-apikeys
+.vscode/
+notes/
+testing/
+designs/
+files/
+apikeys/

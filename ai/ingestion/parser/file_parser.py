@@ -95,4 +95,3 @@ def llamapdfParse(
     except Exception as e:
         print(f"Error parsing PDF file: {e}")
         return None
-    
