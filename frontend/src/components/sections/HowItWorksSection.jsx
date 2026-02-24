@@ -33,15 +33,22 @@ export default function HowItWorksSection({ visible }) {
 
   useLayoutEffect(() => {
     if (!visible) return;
-    const id = setTimeout(recalc, 60);
+    // last item: 0.54s delay + 0.9s transition = 1.44s; sample across that window
+    const ids = [
+      setTimeout(recalc, 80),
+      setTimeout(recalc, 400),
+      setTimeout(recalc, 900),
+      setTimeout(recalc, 1600),
+    ];
     window.addEventListener('resize', recalc);
-    return () => { clearTimeout(id); window.removeEventListener('resize', recalc); };
+    return () => { ids.forEach(clearTimeout); window.removeEventListener('resize', recalc); };
   }, [visible, recalc]);
 
   const handleEnter = (i) => { setHovered(i); setAnimKey(k => k + 1); };
   const handleLeave = () => setHovered(null);
 
-  const showGlow = pts.length === steps.length && hovered !== null && hovered < steps.length - 1;
+  const ready    = pts.length === steps.length;
+  const showGlow = ready && hovered !== null && hovered < steps.length - 1;
   const a = showGlow ? pts[hovered]     : null;
   const b = showGlow ? pts[hovered + 1] : null;
 
@@ -55,7 +62,10 @@ export default function HowItWorksSection({ visible }) {
       <div className="zigzag-row" ref={rowRef}>
         <svg className="zigzag-svg" aria-hidden="true">
           <defs>
-            {/* gradient aligned to the hovered segment's actual direction */}
+            <filter id="trailGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
             {showGlow && (
               <linearGradient
                 id="segFadeGrad"
@@ -70,8 +80,8 @@ export default function HowItWorksSection({ visible }) {
             )}
           </defs>
 
-          {/* dim base segments */}
-          {pts.length === steps.length && pts.slice(0, -1).map((_, i) => (
+          {/* dim base for all segments */}
+          {ready && pts.slice(0, -1).map((_, i) => (
             <path
               key={`base-${i}`}
               d={seg(pts[i], pts[i + 1])}
@@ -82,7 +92,22 @@ export default function HowItWorksSection({ visible }) {
             />
           ))}
 
-          {/* fade-glow that draws itself from hovered node toward the next */}
+          {/* fully lit trail — all segments before the hovered node */}
+          {ready && hovered !== null && pts.slice(0, -1).map((_, i) => {
+            if (i >= hovered) return null;
+            return (
+              <path
+                key={`trail-${i}`}
+                d={seg(pts[i], pts[i + 1])}
+                fill="none"
+                stroke="rgba(255,255,255,0.72)"
+                strokeWidth="1.5"
+                filter="url(#trailGlow)"
+              />
+            );
+          })}
+
+          {/* fade-draw glow on the current segment (hovered → hovered+1) */}
           {showGlow && (
             <path
               key={`glow-${animKey}`}
@@ -95,12 +120,16 @@ export default function HowItWorksSection({ visible }) {
             />
           )}
 
-          {/* node dots */}
+          {/* node dots — all visited nodes stay bright */}
           {pts.map((p, i) => (
             <circle
               key={`dot-${i}`}
               cx={p.x} cy={p.y} r="3"
-              className={hovered === i ? 'node-dot node-dot-active' : 'node-dot'}
+              className={
+                hovered !== null && i <= hovered
+                  ? 'node-dot node-dot-active'
+                  : 'node-dot'
+              }
             />
           ))}
         </svg>

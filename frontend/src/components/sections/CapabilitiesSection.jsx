@@ -1,62 +1,109 @@
-const cards = [
+import { useState } from 'react';
+
+const CARDS = [
   {
-    icon: '⬡',
-    title: 'Absolute Synthesis',
-    body: 'PDFs, CSVs, text files — ingested in full context. One unified knowledge base, always queryable.',
-    delay: '1',
+    icon: '⚡',
+    title: 'Blazing Fast',
+    body: 'Sub-50ms vector retrieval. Modern embeddings pinpoint exact passages from thousands of pages in milliseconds.',
   },
   {
     icon: '◈',
-    title: 'Fact-Grounded Output',
+    title: 'Talk with Documents',
+    body: 'Ask anything. Get precise, context-aware answers drawn directly from your uploaded files — conversationally.',
+  },
+  {
+    icon: '⬡',
+    title: 'Fact-Grounded Answers',
     body: 'Zero hallucinations. Every response carries inline citations tracing back to exact paragraphs in your files.',
-    delay: '2',
   },
   {
     icon: '⟁',
-    title: 'Instant Routing',
-    body: 'Sub-50ms vector retrieval. Modern embeddings pinpoint the exact passage from thousands of pages in milliseconds.',
-    delay: '3',
+    title: 'Quiz Generation',
+    body: 'Automatically generate targeted quizzes from your content to reinforce learning and test comprehension.',
+  },
+  {
+    icon: '◎',
+    title: 'Podcast Generation',
+    body: 'Transform dense documents into engaging audio podcasts. Consume your knowledge base on the go.',
+  },
+  {
+    icon: '▣',
+    title: 'Flashcard Generation',
+    body: 'Convert complex material into concise flashcards for rapid review and long-term retention.',
   },
 ];
 
-function CapCard({ icon, title, body }) {
-  const handleMouseMove = (e) => {
-    const card = e.currentTarget;
-    const r    = card.getBoundingClientRect();
-    const x    = e.clientX - r.left;
-    const y    = e.clientY - r.top;
-    const rX   = ((y - r.height / 2) / r.height) * -11;
-    const rY   = ((x - r.width  / 2) / r.width)  *  11;
-    card.style.transform = `perspective(700px) rotateX(${rX}deg) rotateY(${rY}deg) translateZ(14px)`;
-    card.style.setProperty('--cx', `${(x / r.width  * 100)}%`);
-    card.style.setProperty('--cy', `${(y / r.height * 100)}%`);
-  };
-  const handleMouseLeave = (e) => {
-    e.currentTarget.style.transform = 'perspective(700px) rotateX(0deg) rotateY(0deg) translateZ(0)';
-  };
-  return (
-    <div className="cap-card" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-      <span className="cap-icon">{icon}</span>
-      <h3>{title}</h3>
-      <p>{body}</p>
-    </div>
-  );
-}
+const N    = CARDS.length;  // 6
+const STEP = 360 / N;       // 60°
 
 export default function CapabilitiesSection({ visible }) {
+  const [active,  setActive]  = useState(0);
+  const [ringRot, setRingRot] = useState(0);
+
+  const goTo = (i) => {
+    if (i === active) return;
+    let diff = i - active;
+    if (diff >  N / 2) diff -= N;
+    if (diff < -N / 2) diff += N;
+    setRingRot(r => r - diff * STEP);
+    setActive(i);
+  };
+
+  // circular distance — cards ≥ 2 steps away are back-facing
+  const circDist = (i) => {
+    const d = ((i - active) % N + N) % N;
+    return Math.min(d, N - d);
+  };
+
   return (
     <section className="section" data-section="3">
       <p className={`sec-label reveal${visible ? ' visible' : ''}`}>System capabilities</p>
-      <div className="card-row">
-        {cards.map((c) => (
-          <div
-            key={c.title}
-            className={`reveal${visible ? ' visible' : ''}`}
-            data-delay={c.delay}
-          >
-            <CapCard icon={c.icon} title={c.title} body={c.body} />
-          </div>
-        ))}
+      <h2 className={`sec-heading reveal${visible ? ' visible' : ''}`} data-delay="1">
+        Everything you need.
+      </h2>
+
+      <div className="dial-scene">
+        {/* decorative axis ring */}
+        <div className="dial-axis-ring" />
+
+        <div
+          className="dial-ring"
+          style={{ transform: `rotateY(${ringRot}deg)` }}
+        >
+          {CARDS.map((card, i) => {
+            const back = circDist(i) >= 2;
+            return (
+              <div
+                key={i}
+                className={[
+                  'dial-card',
+                  active === i ? 'dial-card-active' : '',
+                  back ? 'dial-card-back' : '',
+                ].filter(Boolean).join(' ')}
+                style={{ transform: `rotateY(${i * STEP}deg) translateZ(360px)` }}
+                onMouseEnter={back ? undefined : () => goTo(i)}
+              >
+                {/* glass overlay — covers mirrored text on back cards */}
+                <div className="dial-card-glass-overlay" />
+                <span className="dial-card-icon">{card.icon}</span>
+                <h3>{card.title}</h3>
+                <p>{card.body}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* dot indicators below the dial */}
+        <div className="dial-dots">
+          {CARDS.map((_, i) => (
+            <button
+              key={i}
+              className={`dial-dot${active === i ? ' dial-dot-active' : ''}`}
+              onClick={() => goTo(i)}
+              aria-label={CARDS[i].title}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
