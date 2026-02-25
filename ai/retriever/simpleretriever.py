@@ -73,3 +73,22 @@ class Retriever:
         
         fused_results = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)
         return fused_results
+
+    def hybrid_retriever(self, query: str, query_embedding: np.ndarray, documents: List[str], document_embeddings: List[np.ndarray], top_k: int = 5, alpha: float = 0.5) -> List[Tuple[int, float]]:
+        """
+        Retrieve the top_k most relevant documents using a hybrid approach that combines dense and sparse retrieval methods.
+
+        Args:
+            query (str): The query string.
+            query_embedding (np.ndarray): The embedding of the query.
+            documents (List[str]): A list of document strings.
+            document_embeddings (List[np.ndarray]): A list of embeddings for the documents.
+            top_k (int): The number of top relevant documents to retrieve.
+            alpha (float): The weight for the dense retriever in the fusion.
+        Returns:
+            List[Tuple[int, float]]: A list of tuples containing the index and fused relevance score of the top_k relevant documents.
+        """
+        dense_results = self.dense_retriever(query_embedding, document_embeddings, top_k)
+        sparse_results = self.sparse_retriever(query, documents, top_k)
+        fused_results = self.__rrf_fusion__(dense_results, sparse_results, alpha)
+        return fused_results[:top_k]
