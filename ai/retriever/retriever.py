@@ -24,5 +24,26 @@ def dense_retriever(query_embedding:np.ndarray , document_embeddings:List[np.nda
     return [(index, similarities[index]) for index in top_indices]
 
 
+def sparse_retriever(query: str, documents: List[str], top_k: int = 5) -> List[Tuple[int, float]]:
+    """
+    Retrieve the top_k most relevant documents based on term frequency.
 
+    Args:
+        query (str): The query string.
+        documents (List[str]): A list of document strings.
+        top_k (int): The number of top relevant documents to retrieve.
 
+    Returns:
+        List[Tuple[int, float]]: A list of tuples containing the index and relevance score of the top_k relevant documents.
+    """
+    query_terms = set(query.split())
+    relevance_scores = []
+    
+    for index, document in enumerate(documents):
+        document_terms = set(document.split())
+        common_terms = query_terms.intersection(document_terms)
+        relevance_score = len(common_terms) / len(query_terms) if query_terms else 0
+        relevance_scores.append((index, relevance_score))
+    
+    relevance_scores.sort(key=lambda x: x[1], reverse=True)
+    return relevance_scores[:top_k]
