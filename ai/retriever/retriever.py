@@ -52,3 +52,24 @@ class Retriever:
         relevance_scores.sort(key=lambda x: x[1], reverse=True)
         return relevance_scores[:top_k]
 
+    def __rrf_fusion__(self, dense_results: List[Tuple[int, float]], sparse_results: List[Tuple[int, float]], alpha: float = 0.5) -> List[Tuple[int, float]]:
+        """
+        Fuse the results from dense and sparse retrievers using Reciprocal Rank Fusion (RRF).
+
+        Args:
+            dense_results (List[Tuple[int, float]]): The results from the dense retriever.
+            sparse_results (List[Tuple[int, float]]): The results from the sparse retriever.
+            alpha (float): The weight for the dense retriever in the fusion.
+        Returns:
+            List[Tuple[int, float]]: A list of tuples containing the index and fused relevance score of the top_k relevant documents.
+        """
+        fused_scores = {}
+        
+        for index, score in dense_results:
+            fused_scores[index] = fused_scores.get(index, 0) + alpha * (1 / (index + 1))
+        
+        for index, score in sparse_results:
+            fused_scores[index] = fused_scores.get(index, 0) + (1 - alpha) * (1 / (index + 1))
+        
+        fused_results = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)
+        return fused_results
