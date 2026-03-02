@@ -89,5 +89,4 @@ class SimpleRetriever:
         dense_indices = SimpleRetriever.dense_retrieve(query_embedding, dense_document_embeddings, top_k)
         sparse_indices = SimpleRetriever.sparse_retrieve(model, query_embedding, sparse_document_embeddings, top_k)
         return SimpleRetriever.__rrf_fusion__(dense_indices, sparse_indices, k)
-        
     
