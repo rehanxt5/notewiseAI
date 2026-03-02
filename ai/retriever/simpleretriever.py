@@ -43,4 +43,24 @@ class SimpleRetriever:
         similarities = model.cosine_similarity(query_vector, document_vectors)
         top_k_indices = np.argsort(similarities)[-top_k:][::-1]
         return top_k_indices.tolist()
-     
+    
+    def __rrf_fusion__(dense_indices, sparse_indices, k=60):
+        '''
+        Perform Reciprocal Rank Fusion (RRF) to combine dense and sparse retrieval results.
+
+        Args:
+            dense_indices (list): List of document indices retrieved by the dense retriever.
+            sparse_indices (list): List of document indices retrieved by the sparse retriever.
+            k (int): The value of k for RRF.
+        Returns:
+            list: A list of document indices ranked by their combined relevance.
+        '''
+        # Create a score dictionary to hold the combined scores
+        score_dict = {}
+        for rank, idx in enumerate(dense_indices):
+            score_dict[idx] = score_dict.get(idx, 0) + 1 / (rank + k)
+
+        for rank, idx in enumerate(sparse_indices):
+            score_dict[idx] = score_dict.get(idx, 0) + 1 / (rank + k)
+        # Return the indices sorted by their combined scores in descending order
+        return sorted(score_dict.keys(), key=lambda x: score_dict[x], reverse=True)
