@@ -64,3 +64,20 @@ class SimpleRetriever:
             score_dict[idx] = score_dict.get(idx, 0) + 1 / (rank + k)
         # Return the indices sorted by their combined scores in descending order
         return sorted(score_dict.keys(), key=lambda x: score_dict[x], reverse=True)
+    @staticmethod
+    def hybrid_retrieve(model, dense_embeddings, sparse_embeddings,top_k=5, k=60):
+        '''
+        Perform hybrid retrieval by combining dense and sparse retrieval results using RRF.
+
+        Args:
+            model: The model used for sparse retrieval.
+            dense_embeddings (list of list or np.array): A list of embedding vectors for the documents. [2D array]
+            sparse_embeddings (list of list or np.array): A list of sparse embedding vectors for the documents. [2D array]
+            k (int): The value of k for RRF.
+        Returns:
+            list: A list of document indices ranked by their combined relevance.
+        '''
+        dense_indices = SimpleRetriever.dense_retrieve(dense_embeddings, top_k=top_k)
+        sparse_indices = SimpleRetriever.sparse_retrieve(model, sparse_embeddings, top_k=top_k)
+        return SimpleRetriever.__rrf_fusion__(dense_indices, sparse_indices, k=k)
+    
