@@ -212,3 +212,5 @@ testing/
 designs/
 files/
 apikeys/
+notebooks/
+frontend/node_modules/
