@@ -11,6 +11,7 @@ export function useScroll(onSectionChange) {
   const wheelAcc = useRef(0);
   const wheelTmr = useRef(null);
   const trackRef = useRef(null);
+  const tLockRef = useRef(false);
 
   const vh = () => window.innerHeight;
 
@@ -58,10 +59,21 @@ export function useScroll(onSectionChange) {
     };
 
     let tY0 = 0;
-    const onTouchStart = (e) => { tY0 = e.touches[0].clientY; };
+    let tX0 = 0;
+    const onTouchStart = (e) => {
+      tY0 = e.touches[0].clientY;
+      tX0 = e.touches[0].clientX;
+    };
     const onTouchEnd   = (e) => {
+      if (tLockRef.current) return;
       const dy = tY0 - e.changedTouches[0].clientY;
-      if (Math.abs(dy) > 40) goTo(curRef.current + (dy > 0 ? 1 : -1));
+      const dx = tX0 - e.changedTouches[0].clientX;
+      // Only trigger if vertical swipe is dominant and significant
+      if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+        tLockRef.current = true;
+        setTimeout(() => { tLockRef.current = false; }, 700);
+        goTo(curRef.current + (dy > 0 ? 1 : -1));
+      }
     };
 
     const onKey = (e) => {

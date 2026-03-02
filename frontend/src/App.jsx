@@ -1,8 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, lazy, Suspense, useMemo } from 'react';
 import './styles/globals.css';
 
 import { useScroll }          from './hooks/useScroll';
-import ThreeBackground        from './components/ThreeBackground';
 import Nav                    from './components/Nav';
 import SideNav                from './components/SideNav';
 import HeroSection            from './components/sections/HeroSection';
@@ -13,13 +12,25 @@ import StatsSection           from './components/sections/StatsSection';
 import TerminalSection        from './components/sections/TerminalSection';
 import CtaSection             from './components/sections/CtaSection';
 
+// Lazy-load Three.js background (heaviest dependency)
+const ThreeBackground = lazy(() => import('./components/ThreeBackground'));
+
 const TOTAL = 7;
+
+// Detect touch / mobile once
+const isTouchDevice = () =>
+  'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 export default function App() {
   const [current, setCurrent] = useState(0);
+  const [isTouch, setIsTouch] = useState(false);
 
   // visited tracks which sections have already been revealed (one-way)
   const [visited, setVisited] = useState(new Set([0]));
+
+  useEffect(() => {
+    setIsTouch(isTouchDevice());
+  }, []);
 
   const onSectionChange = useCallback((idx) => {
     setCurrent(idx);
@@ -31,23 +42,38 @@ export default function App() {
   // progress bar width
   const progressWidth = `${(current / (TOTAL - 1)) * 100}%`;
 
-  // cursor glow
+  // cursor glow — throttled via rAF, disabled on touch devices
   useEffect(() => {
+    if (isTouch) return;
+    let rafId = 0;
+    let mx = 0, my = 0;
     const onMove = (e) => {
-      document.documentElement.style.setProperty('--mx', `${e.clientX}px`);
-      document.documentElement.style.setProperty('--my', `${e.clientY}px`);
+      mx = e.clientX;
+      my = e.clientY;
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          document.documentElement.style.setProperty('--mx', `${mx}px`);
+          document.documentElement.style.setProperty('--my', `${my}px`);
+          rafId = 0;
+        });
+      }
     };
-    window.addEventListener('mousemove', onMove);
-    return () => window.removeEventListener('mousemove', onMove);
-  }, []);
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [isTouch]);
 
   const vis = (idx) => visited.has(idx);
 
   return (
     <>
-      <div className="cursor-glow" />
+      {!isTouch && <div className="cursor-glow" />}
       <div className="bg-grid" />
-      <ThreeBackground />
+      <Suspense fallback={null}>
+        <ThreeBackground />
+      </Suspense>
       <div className="scroll-progress" style={{ width: progressWidth }} />
 
       <Nav goTo={goTo} />
