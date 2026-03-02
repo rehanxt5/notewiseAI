@@ -212,3 +212,8 @@ testing/
 designs/
 files/
 apikeys/
+frontend/node_modules/
+notebooks/
+notebooks/
+frontend/node_modules/
+.DS_Store

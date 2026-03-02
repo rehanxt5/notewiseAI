@@ -37,18 +37,24 @@ class Embedder:
         if self.model_name == "google-embedding-1":
             return self.__embed_google_embedding_1__(documents)
         elif self.model_name == "bge-m3":
-            return self._embed_bge_m3(documents)
+            return self.__embed_bge_m3__(documents)
     
     def __embed_google_embedding_1__(self,text_or_docs):
         '''
         Embed text or documents using Google Embedding 1 via API.
         '''
         client = genai.Client(api_key=self.__api_key__)
-        response = client.embeddings.create(
-            model="google-embedding-1",
-            input=text_or_docs
+        
+        response = client.models.embed_content(
+            model="gemini-embedding-001",
+            contents=text_or_docs,
         )
-        return [embedding.values for embedding in response.data]
+        # response.embeddings is always a list of ContentEmbedding objects
+        if isinstance(text_or_docs, list):
+            return [emb.values for emb in response.embeddings]
+        else:
+            return response.embeddings[0].values
+
     def __embed_bge_m3__(self,text_or_docs):
         '''
         Embed text or documents using BGE-M3 via local/api model.
